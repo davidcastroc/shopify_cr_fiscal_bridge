@@ -81,9 +81,8 @@ class SaleOrderLine(models.Model):
         if not self.order_id.shopify_instance_id:
             return vals
 
-        # En las líneas de envío importadas desde Shopify, Emipro puede
-        # arrastrar una descripción técnica/duplicada. Para la factura
-        # mostramos únicamente el nombre actual del producto en Odoo.
+        # Emipro can put its technical shipping description on the invoice line.
+        # For Shopify delivery lines, keep only the actual Odoo product name.
         if self.is_delivery and self.product_id:
             vals["name"] = self.product_id.name
 
