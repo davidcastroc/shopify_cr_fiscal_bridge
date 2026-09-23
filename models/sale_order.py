@@ -8,6 +8,41 @@ _logger = logging.getLogger(__name__)
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
+    def _compute_invoice_status(self):
+        """
+        Las líneas técnicas utilizadas por Shopify para representar descuentos
+        no son artículos facturables independientes.
+
+        El descuento ya se incorpora en la línea real del producto, por lo que
+        estas líneas técnicas no deben impedir que una orden completamente
+        facturada quede en estado "Facturado".
+        """
+        super()._compute_invoice_status()
+
+        for order in self.filtered(
+            lambda so: so.state == "sale" and so.shopify_instance_id
+        ):
+            relevant_lines = order.order_line.filtered(
+                lambda line: (
+                    not line.display_type
+                    and not line.is_downpayment
+                    and not line._is_shopify_discount_technical_line()
+                )
+            )
+
+            if not relevant_lines:
+                continue
+
+            statuses = relevant_lines.mapped("invoice_status")
+
+            if all(status == "invoiced" for status in statuses):
+                order.invoice_status = "invoiced"
+            elif all(
+                status in ("invoiced", "upselling")
+                for status in statuses
+            ):
+                order.invoice_status = "upselling"
+
     def _prepare_invoice(self):
         self.ensure_one()
         vals = super()._prepare_invoice()

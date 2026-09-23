@@ -68,10 +68,28 @@ class SaleOrderLine(models.Model):
     def _prepare_invoice_lines_vals_list(self, **optional_values):
         self.ensure_one()
 
+        # La línea técnica de descuento de Shopify NO debe convertirse
+        # en una línea de factura. Su importe se absorbe como porcentaje
+        # de descuento en la línea real del producto.
         if self._is_shopify_discount_technical_line():
             return []
 
         return super()._prepare_invoice_lines_vals_list(**optional_values)
+
+    def _compute_qty_to_invoice(self):
+        """
+        Las líneas técnicas de descuento de Shopify no generan una línea
+        independiente de factura: su importe se incorpora como descuento
+        en la línea real del producto.
+
+        Después del cálculo estándar de Odoo, dejamos su cantidad pendiente
+        de facturar en cero para que no mantengan la orden en "Por facturar".
+        """
+        super()._compute_qty_to_invoice()
+
+        for line in self:
+            if line._is_shopify_discount_technical_line():
+                line.qty_to_invoice = 0.0
 
     def _prepare_invoice_line(self, **optional_values):
         self.ensure_one()
