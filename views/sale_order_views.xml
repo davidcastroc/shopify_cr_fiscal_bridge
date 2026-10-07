@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        B2B warehouse selector:
+        POS is reserved exclusively for Point of Sale operations.
+
+        This is intentionally a UI domain only.
+        We do NOT add a Python constraint because Shopify, POS and
+        technical integrations must remain free to use warehouses
+        programmatically when required.
+    -->
+
+    <record id="sale_order_form_b2b_warehouse_domain" model="ir.ui.view">
+        <field name="name">sale.order.form.b2b.warehouse.domain</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale_stock.view_order_form_inherit_sale_stock"/>
+        <field name="priority">90</field>
+
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='warehouse_id']" position="attributes">
+                <attribute name="domain">[('code', '!=', 'POS')]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
