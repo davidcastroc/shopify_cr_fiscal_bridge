@@ -21,6 +21,21 @@ class SaleOrderLine(models.Model):
             and self.shopify_related_line_id.startswith("discount_")
         )
 
+
+    def _action_launch_stock_rule(self, *, previous_product_uom_qty=False):
+        """
+        Evita generar movimientos de inventario para descuentos técnicos
+        de Shopify, manteniendo el comportamiento estándar de Odoo
+        para todos los productos reales.
+        """
+        real_lines = self.filtered(
+            lambda line: not line._is_shopify_discount_technical_line()
+        )
+
+        return super(SaleOrderLine, real_lines)._action_launch_stock_rule(
+            previous_product_uom_qty=previous_product_uom_qty
+        )
+
     def _get_shopify_discount_lines(self):
         self.ensure_one()
 
