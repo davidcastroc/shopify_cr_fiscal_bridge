@@ -78,18 +78,25 @@ class SaleOrderLine(models.Model):
 
     def _compute_qty_to_invoice(self):
         """
-        Las líneas técnicas de descuento de Shopify no generan una línea
-        independiente de factura: su importe se incorpora como descuento
-        en la línea real del producto.
-
-        Después del cálculo estándar de Odoo, dejamos su cantidad pendiente
-        de facturar en cero para que no mantengan la orden en "Por facturar".
+        Los descuentos técnicos de Shopify no son artículos facturables.
+        Su importe se aplica como porcentaje sobre el producto original.
         """
         super()._compute_qty_to_invoice()
 
         for line in self:
             if line._is_shopify_discount_technical_line():
                 line.qty_to_invoice = 0.0
+
+    def _compute_invoice_status(self):
+        """
+        Evita que una línea técnica de descuento permanezca
+        artificialmente en estado 'to invoice'.
+        """
+        super()._compute_invoice_status()
+
+        for line in self:
+            if line._is_shopify_discount_technical_line():
+                line.invoice_status = "no"
 
     def _prepare_invoice_line(self, **optional_values):
         self.ensure_one()
