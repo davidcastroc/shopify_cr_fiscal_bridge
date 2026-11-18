@@ -27,6 +27,7 @@ class SaleOrder(models.Model):
                     not line.display_type
                     and not line.is_downpayment
                     and not line._is_shopify_discount_technical_line()
+                    and not line._is_shopify_gift_card_redemption_line()
                 )
             )
 

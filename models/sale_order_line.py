@@ -9,6 +9,24 @@ _logger = logging.getLogger(__name__)
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
+    def _is_shopify_gift_card_redemption_line(self):
+        """Identifica exclusivamente redenciones técnicas Shopify."""
+        self.ensure_one()
+
+        order = self.order_id
+        if not order or not order.shopify_instance_id:
+            return False
+
+        instance = order.shopify_instance_id
+        gift_product = instance.gift_card_product_id
+
+        return bool(
+            gift_product
+            and self.product_id == gift_product
+            and self.price_unit < 0
+            and self.product_uom_qty > 0
+        )
+
     def _is_shopify_discount_technical_line(self):
         self.ensure_one()
         instance = self.order_id.shopify_instance_id
@@ -86,7 +104,10 @@ class SaleOrderLine(models.Model):
         # La línea técnica de descuento de Shopify NO debe convertirse
         # en una línea de factura. Su importe se absorbe como porcentaje
         # de descuento en la línea real del producto.
-        if self._is_shopify_discount_technical_line():
+        if (
+            self._is_shopify_discount_technical_line()
+            or self._is_shopify_gift_card_redemption_line()
+        ):
             return []
 
         return super()._prepare_invoice_lines_vals_list(**optional_values)
@@ -99,7 +120,10 @@ class SaleOrderLine(models.Model):
         super()._compute_qty_to_invoice()
 
         for line in self:
-            if line._is_shopify_discount_technical_line():
+            if (
+                line._is_shopify_discount_technical_line()
+                or line._is_shopify_gift_card_redemption_line()
+            ):
                 line.qty_to_invoice = 0.0
 
     def _compute_invoice_status(self):
@@ -110,7 +134,10 @@ class SaleOrderLine(models.Model):
         super()._compute_invoice_status()
 
         for line in self:
-            if line._is_shopify_discount_technical_line():
+            if (
+                line._is_shopify_discount_technical_line()
+                or line._is_shopify_gift_card_redemption_line()
+            ):
                 line.invoice_status = "no"
 
     def _prepare_invoice_line(self, **optional_values):
