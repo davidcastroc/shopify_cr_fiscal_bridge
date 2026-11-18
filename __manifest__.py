@@ -1,6 +1,6 @@
 {
     'name': 'Shopify CR Fiscal Bridge',
-    'version': '19.0.1.0.1',
+    'version': '19.0.1.1.0',
     'summary': 'Normalización fiscal de pedidos Shopify/Emipro para Costa Rica',
     'category': 'Sales',
     'author': 'Castro Li',
